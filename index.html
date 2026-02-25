@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to PPTX Converter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <span class="logo-icon">📊</span>
+                    PDF to PPTX Converter
+                </h1>
+                <p class="subtitle">Convert your PDF presentations to PowerPoint format effortlessly</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-container" id="uploadContainer">
+                    <div class="upload-icon">📁</div>
+                    <h2>Select or Drag PDF Files</h2>
+                    <p>Drag and drop your PDF files here or click to browse</p>
+                    <input 
+                        type="file" 
+                        id="fileInput" 
+                        multiple 
+                        accept=".pdf" 
+                        hidden
+                    >
+                </div>
+            </section>
+
+            <!-- Files List Section -->
+            <section class="files-section">
+                <div class="files-header">
+                    <h3>Selected Files</h3>
+                    <span class="file-count" id="fileCount">0 files</span>
+                </div>
+                <div class="files-list" id="filesList">
+                    <p class="empty-state">No files selected yet</p>
+                </div>
+            </section>
+
+            <!-- Action Buttons -->
+            <section class="action-section">
+                <button id="clearBtn" class="btn btn-secondary" disabled>
+                    <span class="btn-icon">🗑️</span>
+                    Clear All
+                </button>
+                <button id="convertBtn" class="btn btn-primary" disabled>
+                    <span class="btn-icon">✨</span>
+                    Convert to PPTX
+                </button>
+            </section>
+
+            <!-- Progress Section (Hidden by default) -->
+            <section class="progress-section" id="progressSection" style="display: none;">
+                <div class="progress-header">
+                    <h3>Conversion Progress</h3>
+                    <span class="progress-status" id="progressStatus">0%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <p class="progress-text" id="progressText">Preparing files...</p>
+            </section>
+
+            <!-- Results Section (Hidden by default) -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-header">
+                    <h3>Conversion Complete! ✅</h3>
+                </div>
+                <div class="results-list" id="resultsList"></div>
+                <button id="backBtn" class="btn btn-primary">
+                    <span class="btn-icon">↩️</span>
+                    Convert More Files
+                </button>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>PDF to PPTX Converter © 2026 | Fast, Secure & Free</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
