@@ -159,6 +159,8 @@ function updateActionButtons() {
 // ===========================
 // FILE CONVERSION
 // ===========================
+const API_BASE_URL = 'http://localhost:5000/api';
+
 function startConversion() {
     if (appState.files.length === 0 || appState.converting) return;
 
@@ -172,40 +174,95 @@ function startConversion() {
     
     updateActionButtons();
     
-    // Simulate conversion process
-    simulateConversion();
+    // Start actual conversion via API
+    convertFilesViaAPI();
 }
 
-function simulateConversion() {
-    let completed = 0;
-    const total = appState.files.length;
-    
-    const conversionInterval = setInterval(() => {
-        if (completed < total) {
-            const file = appState.files[completed];
-            
-            // Simulate conversion delay (2-4 seconds per file)
-            const delay = Math.random() * 2000 + 2000;
-            
-            setTimeout(() => {
-                // Create result
-                appState.results.push({
-                    originalName: file.name,
-                    convertedName: file.name.replace('.pdf', '.pptx'),
-                    status: 'success',
-                    size: Math.round(file.size * (0.6 + Math.random() * 0.4))
-                });
-                
-                completed++;
-                updateProgress(completed, total);
-                
-                if (completed === total) {
-                    clearInterval(conversionInterval);
-                    finishConversion();
-                }
-            }, delay);
+async function convertFilesViaAPI() {
+    try {
+        const formData = new FormData();
+        
+        // Add all files to form data
+        appState.files.forEach(file => {
+            formData.append('files', file);
+        });
+        
+        // Add optional parameters
+        formData.append('quality', 'high');
+        formData.append('includeNotes', false);
+        
+        progressText.textContent = 'Uploading files...';
+        
+        // Call conversion API
+        const response = await fetch(`${API_BASE_URL}/convert`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Conversion failed');
         }
-    }, 100);
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            // Process results and wait for conversions to complete
+            await processConvertedFiles(data.results);
+        } else {
+            throw new Error(data.message || 'Conversion error occurred');
+        }
+    } catch (error) {
+        console.error('Conversion error:', error);
+        showNotification(`Error: ${error.message}`, 'error');
+        resetToUpload();
+    }
+}
+
+async function processConvertedFiles(results) {
+    appState.results = results;
+    let completed = 0;
+    const total = results.length;
+    
+    // If API returns completed files immediately
+    if (results.every(r => r.status === 'success')) {
+        updateProgress(total, total);
+        finishConversion();
+        return;
+    }
+    
+    // Otherwise, poll for status updates
+    const checkInterval = setInterval(async () => {
+        for (let i = 0; i < results.length; i++) {
+            const result = results[i];
+            
+            if (result.status !== 'success' && result.fileId) {
+                try {
+                    const statusResponse = await fetch(`${API_BASE_URL}/status/${result.fileId}`);
+                    const statusData = await statusResponse.json();
+                    
+                    result.status = statusData.status;
+                    result.progress = statusData.progress;
+                    
+                    if (statusData.status === 'completed') {
+                        completed++;
+                    }
+                } catch (error) {
+                    console.error(`Error checking status for ${result.fileId}:`, error);
+                }
+            }
+        }
+        
+        updateProgress(completed, total);
+        
+        if (completed === total) {
+            clearInterval(checkInterval);
+            finishConversion();
+        }
+    }, 2000); // Check every 2 seconds
 }
 
 function updateProgress(completed, total) {
@@ -246,17 +303,25 @@ function displayResults() {
 function downloadFile(index) {
     const result = appState.results[index];
     
-    // Simulate file download
-    showNotification(`Downloading ${escapeHtml(result.convertedName)}...`, 'success');
+    if (!result.fileId) {
+        showNotification('File ID not available', 'error');
+        return;
+    }
     
-    // In a real implementation, this would trigger an actual file download
-    // Example:
-    // const link = document.createElement('a');
-    // link.href = '/api/download/' + result.id;
-    // link.download = result.convertedName;
-    // document.body.appendChild(link);
-    // link.click();
-    // document.body.removeChild(link);
+    // Create download link
+    const downloadUrl = `${API_BASE_URL}/download/${result.fileId}`;
+    
+    // Create temporary anchor element
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = result.convertedName || 'presentation.pptx';
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showNotification(`Downloading ${escapeHtml(result.convertedName)}...`, 'success');
 }
 
 function resetToUpload() {
